@@ -1,0 +1,34 @@
+# ==========================================
+# DEPENDENCIAS PARA API CUL CON FASTAPI
+# ==========================================
+
+# Framework FastAPI
+fastapi==0.109.0
+uvicorn[standard]==0.27.0
+python-multipart==0.0.6
+
+# Base de datos
+psycopg2-binary==2.9.9
+
+# Machine Learning / IA
+torch==2.1.0
+transformers==4.36.0
+peft==0.7.1
+accelerate==0.25.0
+
+# Utilidades
+python-dotenv==1.0.0
+pydantic==2.5.3
+pydantic-settings==2.1.0
+
+# CORS y validación
+email-validator==2.1.0
+
+# Logging
+loguru==0.7.2
+
+# Para desarrollo/testing (opcional)
+pandas==2.1.0
+datasets==2.16.0
+pytest==7.4.4
+httpx==0.26.0
