@@ -7,6 +7,7 @@ from typing import Optional, Dict, Any
 logger = logging.getLogger(__name__)
 
 class IAService:
+    
     def __init__(self, config):
         self.config = config
         self.tokenizer = None
@@ -15,6 +16,7 @@ class IAService:
         logger.info(f"🎮 Dispositivo: {self.device.upper()}")
     
     def load_model(self):
+        """Cargar modelo base + adaptadores LoRA"""
         try:
             logger.info("🤖 Cargando modelo base...")
             
@@ -96,58 +98,71 @@ class IAService:
         return respuesta
     
     def _construir_prompt(self, pregunta: str, contexto: Optional[Dict[str, Any]] = None) -> str:
-        """Construir prompt con formato adecuado"""
+        """Construir prompt con el formato de tags específico del entrenamiento"""
         
-        instruccion = """Eres el asistente académico oficial de la Corporación Universitaria Latinoamericana (CUL). 
-Gestionas tutorías, docentes y seguimiento académico.
-Respondes de forma clara, profesional y amigable."""
+        # 1. Definir la instrucción del sistema
+        instruccion = (
+            "Eres el asistente académico oficial de la Corporación Universitaria Latinoamericana (CUL). "
+            "Gestionas tutorías, docentes y seguimiento académico. "
+            "Respondes de forma clara, profesional y amigable."
+        )
         
-        contexto_str = ""
+        # 2. Formatear la información de la base de datos (Contexto)
+        contexto_detallado = ""
         if contexto:
-            contexto_str = "\n\n### Información disponible:\n"
+            contexto_detallado = "\nINFORMACIÓN ACTUAL DE LA BASE DE DATOS:\n"
             
             if "docentes" in contexto and contexto["docentes"]:
-                contexto_str += "Docentes: " + ", ".join([
+                contexto_detallado += "- Docentes disponibles: " + ", ".join([
                     f"{d.get('nombre', '')} {d.get('apellido', '')} ({d.get('especialidad', '')})"
                     for d in contexto["docentes"]
                 ]) + "\n"
-            
-            if "materias" in contexto and contexto["materias"]:
-                contexto_str += "Materias: " + ", ".join([
-                    m.get('nombre', '') for m in contexto["materias"]
-                ]) + "\n"
+
+            # Dentro de _construir_prompt
+            if "estudiante" in contexto and contexto["estudiante"]:
+                nombre = contexto["estudiante"].get('nombre', 'Estudiante')
+                contexto_detallado += f"Estás hablando con el estudiante: {nombre}.\n"
             
             if "estudiante" in contexto:
                 est = contexto["estudiante"]
-                contexto_str += f"Estudiante: {est.get('nombre', '')} ({est.get('codigo_estudiante', '')})\n"
+                contexto_detallado += f"- Datos del Estudiante: {est.get('nombre', '')} (Código: {est.get('codigo_estudiante', '')})\n"
             
             if "tutorias" in contexto and contexto["tutorias"]:
-                contexto_str += f"Tutorías programadas: {len(contexto['tutorias'])}\n"
+                contexto_detallado += "- Tutorías encontradas:\n"
+                for t in contexto["tutorias"]:
+                    # Ajusta las llaves según los nombres de columna de tu BD
+                    contexto_detallado += f"  * Materia ID: {t.get('materia_id')}, Fecha: {t.get('fecha_hora')}, Tema: {t.get('tema')}\n"
             
             if "seguimiento" in contexto and contexto["seguimiento"]:
-                contexto_str += f"Registros de seguimiento: {len(contexto['seguimiento'])}\n"
-        
-        prompt = f"""### Instrucción:
-{instruccion}
-{contexto_str}
-### Entrada:
-{pregunta}
+                contexto_detallado += f"- El estudiante tiene {len(contexto['seguimiento'])} registros de avance académico.\n"
 
-### Respuesta:
-"""
+        # 3. Ensamblar con los tags específicos del modelo
+        prompt = (
+            f"<SYSTEM> {instruccion} {contexto_detallado} </SYSTEM>\n"
+            f"<USER> {pregunta} </USER>\n"
+            f"<ASSISTANT>"
+        )
         
         return prompt
     
     def _extraer_respuesta(self, texto_completo: str) -> str:
-        """Extraer solo la respuesta del modelo"""
+        """Extraer solo la respuesta generada después del tag ASSISTANT"""
         
-        if "### Respuesta:" in texto_completo:
-            partes = texto_completo.split("### Respuesta:")
+        if "<ASSISTANT>" in texto_completo:
+            # Dividimos por el tag y tomamos lo último
+            partes = texto_completo.split("<ASSISTANT>")
             respuesta = partes[-1].strip()
             
-            if "###" in respuesta:
-                respuesta = respuesta.split("###")[0].strip()
+            # Limpiamos tags de cierre que el modelo pueda haber generado
+            if "</ASSISTANT>" in respuesta:
+                respuesta = respuesta.split("</ASSISTANT>")[0].strip()
             
+            # Si el modelo intenta generar otro ciclo de USER/SYSTEM, lo cortamos
+            if "<USER>" in respuesta:
+                respuesta = respuesta.split("<USER>")[0].strip()
+            if "<SYSTEM>" in respuesta:
+                respuesta = respuesta.split("<SYSTEM>")[0].strip()
+                
             return respuesta
         
         return texto_completo.strip()

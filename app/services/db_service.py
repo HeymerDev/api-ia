@@ -9,6 +9,38 @@ class DBService:
     
     def __init__(self, db):
         self.db = db
+
+    def obtener_o_crear_estudiante_por_nombre(self, nombre: str):
+    # 1. Buscar si ya existe
+        query_busqueda = "SELECT id, nombre FROM estudiantes WHERE LOWER(nombre) = %s LIMIT 1"
+        resultado = self.db.execute_query(query_busqueda, (nombre.lower(),))
+    
+        if resultado:
+            return resultado[0]
+    
+    # 2. Si no existe, crearlo (usamos un código de estudiante genérico o nulo)
+        query_insercion = """
+            INSERT INTO estudiantes (nombre, codigo_estudiante, fecha_registro) 
+            VALUES (%s, %s, CURRENT_TIMESTAMP) RETURNING id, nombre
+        """
+        codigo_temporal = f"CHAT-{datetime.now().strftime('%M%S')}"
+        nuevo = self.db.execute_query(query_insercion, (nombre, codigo_temporal))
+        return nuevo[0] if nuevo else None
+
+    def obtener_o_crear_estudiante(self, nombre: str):
+        query = "SELECT * FROM estudiantes WHERE LOWER(nombre) = %s LIMIT 1"
+        estudiante = self.db.execute_query(query, (nombre.lower(),))
+    
+        if estudiante:
+            return estudiante[0]
+    
+        insert_query = """
+            INSERT INTO estudiantes (nombre, fuente_registro, fecha_creacion) 
+            VALUES (%s, 'chat', CURRENT_TIMESTAMP) 
+            RETURNING *
+        """
+        nuevo_estudiante = self.db.execute_query(insert_query, (nombre,))
+        return nuevo_estudiante[0] if nuevo_estudiante else None
     
     def obtener_docentes_por_materia(self, nombre_materia: str) -> List[Dict[str, Any]]:
         """Obtener docentes que dictan una materia"""

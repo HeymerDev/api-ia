@@ -92,18 +92,41 @@ LORA_PATH=C:/Users/Usuario/Desktop/Heymer/modelo_cul_lora/modelo_cul_lora
 
 ### 7. Verificar Estructura de Archivos
 
+# Estructura del Proyecto API CUL
+
 ```
 proyecto-cul-api/
-├── app_main.py              # Archivo principal FastAPI
-├── app_config.py            # Configuración
-├── app_database.py          # Conexión a PostgreSQL
-├── app_ia_service.py        # Servicio de IA
-├── app_db_service.py        # Servicio de consultas BD
-├── app_models.py            # Modelos Pydantic
-├── requirements.txt         # Dependencias
-├── .env                     # Variables de entorno
-├── schema_cul_completo.sql  # Schema de BD
-└── README.md                # Este archivo
+│
+├── app/
+│   ├── __init__.py
+│   ├── main.py                 # Punto de entrada FastAPI
+│   ├── config.py               # Configuración (variables de entorno)
+│   ├── database.py             # Conexión a PostgreSQL
+│   │
+│   ├── models/
+│   │   ├── __init__.py
+│   │   └── schemas.py          # Modelos Pydantic (request/response)
+│   │
+│   ├── routes/
+│   │   ├── __init__.py
+│   │   ├── chat.py             # Endpoints de chat
+│   │   ├── tutorias.py         # Endpoints de tutorías
+│   │   ├── docentes.py         # Endpoints de docentes
+│   │   └── estudiantes.py      # Endpoints de estudiantes
+│   │
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── ia_service.py       # Lógica del modelo IA
+│   │   └── db_service.py       # Lógica de consultas BD
+│   │
+│   └── utils/
+│       ├── __init__.py
+│       └── helpers.py          # Funciones auxiliares
+│
+├── .env                        # Variables de entorno
+├── requirements.txt            # Dependencias Python
+├── schema.sql                  # Script de BD
+└── README.md                   # Documentación
 ```
 
 ---
