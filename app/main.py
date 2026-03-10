@@ -11,6 +11,7 @@ app = FastAPI()
 origins = [
     "http://localhost:5173",  # puerto de tu frontend
     "http://127.0.0.1:5173",  # a veces Vite usa 127.0.0.1
+    "*"
 ]
 
 app.add_middleware(
